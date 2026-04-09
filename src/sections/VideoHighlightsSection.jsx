@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useInView } from '../hooks/useInView';
 
-// Import your local video
-import localVideo from '../assets/YTDown.com_YouTube_Adeste-Fideles-John-Francis-Wade-Chorale_Media_AIeTkR5DAso_001_1080p.mp4';
+// Video import removed - using YouTube embeds instead
 
 const VideoHighlightsSection = () => {
     const [headerRef, headerVisible] = useInView({ threshold: 0.2 });
@@ -15,8 +14,8 @@ const VideoHighlightsSection = () => {
             title: 'Site Progress Update',
             description: 'Watch the latest construction progress on our flagship project in Kigali.',
             thumbnail: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=800',
-            src: localVideo,
-            type: 'local',
+            src: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+            type: 'youtube',
             date: 'April 2026',
             tag: 'Progress Update'
         },
@@ -129,25 +128,14 @@ const VideoHighlightsSection = () => {
 
                         {/* Video Player */}
                         <div className="rounded-2xl overflow-hidden shadow-2xl bg-black aspect-video">
-                            {activeVideo.type === 'local' ? (
-                                <video
-                                    src={activeVideo.src}
-                                    controls
-                                    autoPlay
-                                    className="w-full h-full object-contain"
-                                >
-                                    Your browser does not support the video tag.
-                                </video>
-                            ) : (
-                                <iframe
-                                    src={`${activeVideo.src}?autoplay=1`}
-                                    title={activeVideo.title}
-                                    className="w-full h-full"
-                                    frameBorder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                ></iframe>
-                            )}
+                            <iframe
+                                src={`${activeVideo.src}?autoplay=1`}
+                                title={activeVideo.title}
+                                className="w-full h-full"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                            ></iframe>
                         </div>
 
                         {/* Description */}
@@ -161,52 +149,31 @@ const VideoHighlightsSection = () => {
 
 // ─── Video Card Component ───────────────────────────────
 const VideoCard = ({ video, isFeatured, onPlay }) => {
-    const videoPreviewRef = useRef(null);
     const [isHovered, setIsHovered] = useState(false);
 
     const handleMouseEnter = () => {
         setIsHovered(true);
-        // Auto-play preview on hover for local videos
-        if (video.type === 'local' && videoPreviewRef.current) {
-            videoPreviewRef.current.play().catch(() => {});
-        }
     };
 
     const handleMouseLeave = () => {
         setIsHovered(false);
-        if (video.type === 'local' && videoPreviewRef.current) {
-            videoPreviewRef.current.pause();
-            videoPreviewRef.current.currentTime = 0;
-        }
     };
 
     return (
         <div
-            className={`group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 hover:shadow-2xl hover:shadow-red-500/10 ${
-                isFeatured ? 'h-[400px] md:h-[500px]' : 'h-[300px]'
-            }`}
+            className={`group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 hover:shadow-2xl hover:shadow-red-500/10 ${isFeatured ? 'h-[400px] md:h-[500px]' : 'h-[300px]'
+                }`}
             onClick={onPlay}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
         >
-            {/* Thumbnail / Video Preview */}
+            {/* Thumbnail */}
             <div className="absolute inset-0">
-                {video.type === 'local' && isHovered ? (
-                    <video
-                        ref={videoPreviewRef}
-                        src={video.src}
-                        muted
-                        loop
-                        playsInline
-                        className="w-full h-full object-cover"
-                    />
-                ) : (
-                    <img
-                        src={video.thumbnail}
-                        alt={video.title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                )}
+                <img
+                    src={video.thumbnail}
+                    alt={video.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                />
             </div>
 
             {/* Dark Overlay */}
@@ -214,9 +181,8 @@ const VideoCard = ({ video, isFeatured, onPlay }) => {
 
             {/* Play Button */}
             <div className="absolute inset-0 flex items-center justify-center">
-                <div className={`bg-red-500/90 rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:bg-red-500 shadow-2xl ${
-                    isFeatured ? 'w-20 h-20' : 'w-16 h-16'
-                }`}>
+                <div className={`bg-red-500/90 rounded-full flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:bg-red-500 shadow-2xl ${isFeatured ? 'w-20 h-20' : 'w-16 h-16'
+                    }`}>
                     <svg className={`text-white ml-1 ${isFeatured ? 'w-8 h-8' : 'w-6 h-6'}`} fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z" />
                     </svg>
