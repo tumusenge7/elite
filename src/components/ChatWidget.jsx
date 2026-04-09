@@ -1,11 +1,8 @@
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { MessageCircle, X, Send, User, Mail, Lock, LogIn, UserPlus } from 'lucide-react';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
+// Remove the API_BASE_URL - use relative paths for Vercel
 const ChatWidget = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -51,7 +48,8 @@ const ChatWidget = () => {
     const fetchChatHistory = async (userId) => {
         try {
             const config = getAuthConfig();
-            const response = await axios.get(`${API_BASE_URL}/api/users/chat-history/${userId}`, config);
+            // Use relative URL
+            const response = await axios.get(`/api/users/chat-history/${userId}`, config);
             if (response.data && response.data.messages) {
                 setMessages(response.data.messages);
             }
@@ -69,7 +67,8 @@ const ChatWidget = () => {
         setError('');
 
         try {
-            const response = await axios.post(`${API_BASE_URL}/api/users/register`, {
+            // Use relative URL
+            const response = await axios.post('/api/users/register', {
                 name: registerName,
                 email: registerEmail,
                 password: registerPassword
@@ -100,7 +99,8 @@ const ChatWidget = () => {
         setError('');
 
         try {
-            const response = await axios.post(`${API_BASE_URL}/api/users/login`, {
+            // Use relative URL
+            const response = await axios.post('/api/users/login', {
                 email: loginEmail,
                 password: loginPassword
             });
@@ -131,13 +131,13 @@ const ChatWidget = () => {
 
         try {
             const config = getAuthConfig();
-            const response = await axios.post(`${API_BASE_URL}/api/users/send-message`, {
+            // Use relative URL
+            const response = await axios.post('/api/users/send-message', {
                 user_id: user.id,
                 message: message
             }, config);
 
             if (response.data.success) {
-                // Add message to local state
                 const newMessage = {
                     id: response.data.message.id || Date.now(),
                     message: message,
