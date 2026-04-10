@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import API from '../services/api';  // Use the centralized API service
 
 const ProjectsSection = () => {
     const [projects, setProjects] = useState([]);
@@ -22,8 +20,9 @@ const ProjectsSection = () => {
             return image;
         }
 
+        // Use the backend URL for relative paths
         if (image.startsWith('/uploads')) {
-            return `${API_BASE_URL}${image}`;
+            return `https://elite-backend-8hcx.onrender.com${image}`;
         }
 
         return image;
@@ -35,7 +34,8 @@ const ProjectsSection = () => {
                 setLoading(true);
                 console.log('Fetching projects from API...');
 
-                const response = await axios.get(`${API_BASE_URL}/api/projects`);
+                // Use the API instance instead of axios directly
+                const response = await API.get('/api/projects');
 
                 console.log('API Response:', response.data);
 

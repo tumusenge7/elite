@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import axios from 'axios';
+import API from '../services/api';  // Use centralized API instead of axios
 import emailjs from '@emailjs/browser';
 import { useInView } from '../hooks/useInView';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -37,11 +37,10 @@ const ContactSection = () => {
         setSubmitStatus(null);
 
         try {
-            // 1. Send to Backend for Database logging
-            await axios.post('http://localhost:5000/api/messages', formData);
+            // 1. Send to Backend for Database logging - NOW USING API INSTANCE
+            await API.post('/api/messages', formData);
 
             // 2. Send via EmailJS (User needs to configure these in .env)
-            // Replace with actual keys: emailjs.sendForm('SERVICE_ID', 'TEMPLATE_ID', formRef.current, 'PUBLIC_KEY')
             const serviceId = process.env.REACT_APP_EMAILJS_SERVICE_ID || 'service_test';
             const templateId = process.env.REACT_APP_EMAILJS_TEMPLATE_ID || 'template_test';
             const publicKey = process.env.REACT_APP_EMAILJS_PUBLIC_KEY || 'public_key_test';
@@ -99,7 +98,7 @@ const ContactSection = () => {
                     {/* Contact Cards */}
                     <div className="lg:col-span-1 space-y-6">
                         {contactInfo.map((card, idx) => (
-                            <motion.div 
+                            <motion.div
                                 key={idx}
                                 initial={{ opacity: 0, x: -50 }}
                                 whileInView={{ opacity: 1, x: 0 }}
@@ -119,7 +118,7 @@ const ContactSection = () => {
                     </div>
 
                     {/* Form */}
-                    <motion.div 
+                    <motion.div
                         className="lg:col-span-2"
                         initial={{ opacity: 0, y: 50 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -129,7 +128,7 @@ const ContactSection = () => {
                         <form ref={formRef} onSubmit={handleSubmit} className="bg-white shadow-2xl shadow-slate-200/50 rounded-3xl p-8 md:p-12 border border-slate-100">
                             <div className="grid md:grid-cols-2 gap-8 text-left">
                                 {[
-                                    { name: 'name', label: 'Full Name', type: 'text', placeholder: 'John Doe', icon: <Mail className="w-4 h-4" /> },
+                                    { name: 'name', label: 'Full Name', type: 'text', placeholder: 'John Doe' },
                                     { name: 'email', label: 'Email Address', type: 'email', placeholder: 'john@example.com' },
                                     { name: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+250 xxx xxx xxx' },
                                     { name: 'subject', label: 'Subject', type: 'text', placeholder: 'How can we help?' }
@@ -137,10 +136,10 @@ const ContactSection = () => {
                                     <div key={field.name} className="space-y-2">
                                         <label className="text-sm font-black text-slate-900 uppercase tracking-widest ml-1">{field.label}</label>
                                         <input
-                                            type={field.type} 
-                                            name={field.name} 
+                                            type={field.type}
+                                            name={field.name}
                                             value={formData[field.name]}
-                                            onChange={handleChange} 
+                                            onChange={handleChange}
                                             placeholder={field.placeholder}
                                             className={`w-full px-6 py-4 bg-slate-50 border-[2px] rounded-xl focus:outline-none focus:ring-4 focus:ring-red-500/10 transition-all duration-300 font-medium ${errors[field.name] ? 'border-red-200 bg-red-50' : 'border-slate-100 focus:border-red-500'}`}
                                         />
@@ -156,9 +155,9 @@ const ContactSection = () => {
                             <div className="mt-8 text-left">
                                 <label className="text-sm font-black text-slate-900 uppercase tracking-widest ml-1">Message Details</label>
                                 <textarea
-                                    name="message" 
-                                    value={formData.message} 
-                                    onChange={handleChange} 
+                                    name="message"
+                                    value={formData.message}
+                                    onChange={handleChange}
                                     rows="6"
                                     placeholder="Tell us about your architectural vision..."
                                     className={`w-full px-6 py-4 bg-slate-50 border-[2px] rounded-xl focus:outline-none focus:ring-4 focus:ring-red-500/10 transition-all duration-300 font-medium resize-none ${errors.message ? 'border-red-200 bg-red-50' : 'border-slate-100 focus:border-red-500'}`}
@@ -170,8 +169,8 @@ const ContactSection = () => {
                                 )}
                             </div>
 
-                            <button 
-                                type="submit" 
+                            <button
+                                type="submit"
                                 disabled={isSubmitting}
                                 className="mt-10 w-full bg-slate-900 hover:bg-red-600 text-white font-black py-5 px-10 rounded-xl transition-all duration-500 transform hover:scale-[1.02] flex items-center justify-center gap-3 disabled:opacity-50 group shadow-lg shadow-slate-900/10 hover:shadow-red-600/20"
                             >
@@ -190,7 +189,7 @@ const ContactSection = () => {
 
                             <AnimatePresence>
                                 {submitStatus === 'success' && (
-                                    <motion.div 
+                                    <motion.div
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0 }}
@@ -201,7 +200,7 @@ const ContactSection = () => {
                                     </motion.div>
                                 )}
                                 {submitStatus === 'error' && (
-                                    <motion.div 
+                                    <motion.div
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0 }}
@@ -217,7 +216,7 @@ const ContactSection = () => {
                 </div>
 
                 {/* Map Section */}
-                <motion.div 
+                <motion.div
                     className="mt-24"
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
@@ -237,4 +236,5 @@ const ContactSection = () => {
         </div>
     );
 };
+
 export default ContactSection;
