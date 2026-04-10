@@ -67,7 +67,7 @@ const Contact = () => {
         // Simulate API call - Replace with your actual backend endpoint
         try {
             // Example API call:
-            await fetch('https://localhost:5000', {
+            await fetch('https://elite-backend-8hcx.onrender.com/api/messages', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)

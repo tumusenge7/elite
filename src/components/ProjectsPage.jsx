@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+
 
 // Import your actual project images here if they are in your assets folder
 import project1 from "../assets/1.jpg";
 import project2 from "../assets/2.jpg";
 import project3 from "../assets/3.jpg";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://elite-backend-8hcx.onrender.com';
 
 const ProjectsPage = () => {
     const [projects, setProjects] = useState([]);

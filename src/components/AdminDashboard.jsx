@@ -8,7 +8,7 @@ import {
     Shield, Database, X, Save
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://elite-backend-8hcx.onrender.com/api';
 
 const AdminDashboard = () => {
     // --- State Management ---
@@ -237,7 +237,7 @@ const GridTab = ({ type, items, onAdd, onEdit, onDelete }) => (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {items.map(item => {
                 const img = item.main_image || item.image || '/placeholder.jpg';
-                const fullPath = img.startsWith('http') ? img : `http://localhost:5000${img}`;
+                const fullPath = img.startsWith('http') ? img : `https://elite-backend-8hcx.onrender.com${img}`;
                 return (
                     <div key={item.id} className="group bg-[#0f172a] rounded-3xl overflow-hidden border border-slate-800/50 hover:border-rose-500/30 transition-all duration-500 hover:-translate-y-2">
                         <div className="h-64 relative overflow-hidden">
