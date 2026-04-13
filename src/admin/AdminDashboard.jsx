@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
+import API from '../services/api';
 import {
     Plus,
     Bell,
@@ -24,21 +24,6 @@ import {
 import DashboardNav from './components/DashboardNav';
 import DashboardStats from './components/DashboardStats';
 import CRUDModal from './components/CRUDModal';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://elite-backend-8hcx.onrender.com';
-
-// Configure axios interceptor for token handling
-axios.interceptors.response.use(
-    response => response,
-    error => {
-        if (error.response?.status === 401) {
-            localStorage.removeItem('adminAuthenticated');
-            localStorage.removeItem('adminToken');
-            window.location.href = '/admin/login';
-        }
-        return Promise.reject(error);
-    }
-);
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -139,7 +124,7 @@ const AdminDashboard = () => {
         if (path.startsWith('http')) return path;
         if (path.startsWith('data:image')) return path;
         const cleanPath = path.startsWith('/') ? path : `/${path}`;
-        return `${API_BASE_URL}${cleanPath}`;
+        return `${API.defaults.baseURL || ''}${cleanPath}`;
     }, []);
 
     const handleLogout = useCallback(() => {
@@ -151,29 +136,15 @@ const AdminDashboard = () => {
         navigate('/admin/login');
     }, [navigate]);
 
-    const getAuthConfig = useCallback(() => {
-        const token = localStorage.getItem('adminToken');
-        if (!token) {
-            throw new Error('No authentication token found');
-        }
-        return {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        };
-    }, []);
-
     const fetchAllData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const projRes = await axios.get(`${API_BASE_URL}/api/projects`);
-            const servRes = await axios.get(`${API_BASE_URL}/api/services`);
+            const projRes = await API.get('/api/projects');
+            const servRes = await API.get('/api/services');
 
             let msgRes = { data: [] };
             try {
-                const config = getAuthConfig();
-                msgRes = await axios.get(`${API_BASE_URL}/api/messages`, config);
+                msgRes = await API.get('/api/messages');
             } catch (error) {
                 console.error('Failed to fetch messages:', error);
             }
@@ -201,13 +172,12 @@ const AdminDashboard = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [showStatus, getAuthConfig, handleLogout]);
+    }, [showStatus, handleLogout]);
 
     // Fetch chat sessions
     const fetchChatSessions = useCallback(async () => {
         try {
-            const config = getAuthConfig();
-            const response = await axios.get(`${API_BASE_URL}/api/admin/chat-sessions`, config);
+            const response = await API.get('/api/admin/chat-sessions');
             setChatSessions(response.data);
 
             // Update stats
@@ -220,19 +190,20 @@ const AdminDashboard = () => {
         } catch (error) {
             console.error('Failed to fetch chat sessions:', error);
         }
-    }, [getAuthConfig]);
+    }, []);
 
     // Fetch chat messages for a specific user
     const fetchChatMessages = useCallback(async (userId) => {
         try {
-            const config = getAuthConfig();
-            const response = await axios.get(`${API_BASE_URL}/api/admin/chat-messages/${userId}`, config);
+            const response = await API.get(`/api/admin/chat-messages/${userId}`);
             setChatMessages(response.data.messages || []);
+            // Viewing messages marks them as read in backend; refresh sessions to clear unread badges.
+            fetchChatSessions();
         } catch (error) {
             console.error('Failed to fetch chat messages:', error);
             showStatus('Failed to load messages', 'error');
         }
-    }, [getAuthConfig, showStatus]);
+    }, [fetchChatSessions, showStatus]);
 
     // Send admin reply
     const handleSendReply = useCallback(async (messageId, userId) => {
@@ -240,12 +211,11 @@ const AdminDashboard = () => {
 
         setSendingReply(true);
         try {
-            const config = getAuthConfig();
-            await axios.post(`${API_BASE_URL}/api/admin/reply`, {
+            await API.post('/api/admin/reply', {
                 message_id: messageId,
                 user_id: userId,
                 reply: replyMessage
-            }, config);
+            });
 
             setReplyMessage('');
             await fetchChatMessages(userId);
@@ -257,15 +227,14 @@ const AdminDashboard = () => {
         } finally {
             setSendingReply(false);
         }
-    }, [replyMessage, getAuthConfig, fetchChatMessages, fetchChatSessions, showStatus]);
+    }, [replyMessage, fetchChatMessages, fetchChatSessions, showStatus]);
 
     // End chat session
     const handleEndSession = useCallback(async (userId) => {
         if (!window.confirm('End this chat session? The user will need to start a new session to chat again.')) return;
 
         try {
-            const config = getAuthConfig();
-            await axios.post(`${API_BASE_URL}/api/admin/end-session/${userId}`, {}, config);
+            await API.post(`/api/admin/end-session/${userId}`, {});
             await fetchChatSessions();
             if (selectedSession?.user_id === userId) {
                 setSelectedSession(null);
@@ -276,12 +245,10 @@ const AdminDashboard = () => {
             console.error('Failed to end session:', error);
             showStatus('Failed to end session', 'error');
         }
-    }, [getAuthConfig, fetchChatSessions, selectedSession, showStatus]);
+    }, [fetchChatSessions, selectedSession, showStatus]);
 
     const handleSave = useCallback(async (formData, id) => {
         try {
-            const config = getAuthConfig();
-
             if (modalType === 'Project') {
                 const projectData = {
                     title: formData.title,
@@ -293,18 +260,18 @@ const AdminDashboard = () => {
                 };
 
                 if (id) {
-                    await axios.put(`${API_BASE_URL}/api/projects/${id}`, projectData, config);
+                    await API.put(`/api/projects/${id}`, projectData);
                     showStatus('Project Updated Successfully');
                 } else {
-                    await axios.post(`${API_BASE_URL}/api/projects`, projectData, config);
+                    await API.post('/api/projects', projectData);
                     showStatus('Project Added Successfully');
                 }
             } else if (modalType === 'Service') {
                 if (id) {
-                    await axios.put(`${API_BASE_URL}/api/services/${id}`, formData, config);
+                    await API.put(`/api/services/${id}`, formData);
                     showStatus('Service Updated Successfully');
                 } else {
-                    await axios.post(`${API_BASE_URL}/api/services`, formData, config);
+                    await API.post('/api/services', formData);
                     showStatus('Service Added Successfully');
                 }
             }
@@ -318,22 +285,20 @@ const AdminDashboard = () => {
             const errorMsg = error.response?.data?.error || 'Save Failed';
             showStatus(errorMsg, 'error');
         }
-    }, [modalType, showStatus, fetchAllData, getAuthConfig]);
+    }, [modalType, showStatus, fetchAllData]);
 
     const handleDelete = useCallback(async (type, id) => {
         if (!window.confirm(`⚠️ Permanently delete this ${type}?`)) return;
 
         try {
-            const config = getAuthConfig();
-
             if (type === 'Project') {
-                await axios.delete(`${API_BASE_URL}/api/projects/${id}`, config);
+                await API.delete(`/api/projects/${id}`);
                 showStatus('Project Deleted Successfully');
             } else if (type === 'Service') {
-                await axios.delete(`${API_BASE_URL}/api/services/${id}`, config);
+                await API.delete(`/api/services/${id}`);
                 showStatus('Service Deleted Successfully');
             } else if (type === 'Inbox') {
-                await axios.delete(`${API_BASE_URL}/api/messages/${id}`, config);
+                await API.delete(`/api/messages/${id}`);
                 showStatus('Message Archived Successfully');
             }
 
@@ -343,7 +308,7 @@ const AdminDashboard = () => {
             console.error('Delete error:', error);
             showStatus('Delete Failed', 'error');
         }
-    }, [showStatus, fetchAllData, getAuthConfig]);
+    }, [showStatus, fetchAllData]);
 
     const openModal = useCallback((type, item = null) => {
         setModalType(type);

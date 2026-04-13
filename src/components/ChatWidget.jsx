@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
 import { MessageCircle, X, Send, User, Mail, Lock, LogIn, UserPlus } from 'lucide-react';
+import API from '../services/api';
 
 // Remove the API_BASE_URL - use relative paths for Vercel
 const ChatWidget = () => {
@@ -37,19 +37,20 @@ const ChatWidget = () => {
         }
     }, []);
 
-    const getAuthConfig = () => {
-        const token = localStorage.getItem('chatToken');
-        if (!token) throw new Error('No token');
-        return {
-            headers: { 'Authorization': `Bearer ${token}` }
-        };
-    };
+    // Keep chat history in sync (e.g., when admin ends session and clears history)
+    useEffect(() => {
+        if (!isOpen || !isLoggedIn || !user?.id) return;
+
+        const interval = setInterval(() => {
+            fetchChatHistory(user.id);
+        }, 4000);
+
+        return () => clearInterval(interval);
+    }, [isOpen, isLoggedIn, user?.id]);
 
     const fetchChatHistory = async (userId) => {
         try {
-            const config = getAuthConfig();
-            // Use relative URL
-            const response = await axios.get(`/api/users/chat-history/${userId}`, config);
+            const response = await API.get(`/api/users/chat-history/${userId}`);
             if (response.data && response.data.messages) {
                 setMessages(response.data.messages);
             }
@@ -67,8 +68,7 @@ const ChatWidget = () => {
         setError('');
 
         try {
-            // Use relative URL
-            const response = await axios.post('/api/users/register', {
+            const response = await API.post('/api/users/register', {
                 name: registerName,
                 email: registerEmail,
                 password: registerPassword
@@ -99,8 +99,7 @@ const ChatWidget = () => {
         setError('');
 
         try {
-            // Use relative URL
-            const response = await axios.post('/api/users/login', {
+            const response = await API.post('/api/users/login', {
                 email: loginEmail,
                 password: loginPassword
             });
@@ -130,22 +129,22 @@ const ChatWidget = () => {
         setError('');
 
         try {
-            const config = getAuthConfig();
-            // Use relative URL
-            const response = await axios.post('/api/users/send-message', {
+            const response = await API.post('/api/users/send-message', {
                 user_id: user.id,
                 message: message
-            }, config);
+            });
 
             if (response.data.success) {
                 const newMessage = {
-                    id: response.data.message.id || Date.now(),
+                    id: response.data.message?.id || Date.now(),
                     message: message,
                     created_at: new Date().toISOString(),
                     is_admin_reply: false
                 };
                 setMessages(prev => [...prev, newMessage]);
                 setMessage('');
+                // Re-fetch to stay consistent with server state
+                fetchChatHistory(user.id);
             }
         } catch (error) {
             console.error('Send error:', error);

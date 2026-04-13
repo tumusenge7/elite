@@ -1,30 +1,40 @@
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// Create connection pool
+const {
+    DB_HOST = 'localhost',
+    DB_PORT = '3306',
+    DB_USER = 'root',
+    DB_PASSWORD = '',
+    DB_NAME = 'elite_construction'
+} = process.env;
+
 const pool = mysql.createPool({
-    host: process.env.DB_HOST || '127.0.0.1',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'construction_db',
-    port: 3306,
+    host: DB_HOST,
+    port: Number(DB_PORT),
+    user: DB_USER,
+    password: DB_PASSWORD,
+    database: DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
 });
 
-const promisePool = pool.promise();
+async function query(sql, params) {
+    return pool.query(sql, params);
+}
 
-// Test connection
-(async () => {
+async function ping() {
+    const conn = await pool.getConnection();
     try {
-        const connection = await promisePool.getConnection();
-        console.log('  Database connected successfully');
-        connection.release();
-    } catch (error) {
-        console.error(' MySQL Database connection failed:', error.message);
-        console.log(' Please check your database credentials in .env file');
+        await conn.ping();
+    } finally {
+        conn.release();
     }
-})();
+}
 
-module.exports = promisePool;
+module.exports = {
+    pool,
+    query,
+    ping
+};

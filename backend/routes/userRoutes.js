@@ -1,5 +1,5 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 const router = express.Router();
@@ -27,13 +27,13 @@ router.post('/register', async (req, res) => {
 
         // Insert user
         const [result] = await db.query(
-            'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-            [name, email, hashedPassword]
+            'INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)',
+            [name, email, hashedPassword, 'user']
         );
 
         // Generate token
         const token = jwt.sign(
-            { id: result.insertId, email, name },
+            { id: result.insertId, email, name, role: 'user' },
             JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -68,14 +68,14 @@ router.post('/login', async (req, res) => {
         const user = users[0];
 
         // Verify password
-        const validPassword = await bcrypt.compare(password, user.password);
+        const validPassword = await bcrypt.compare(password, user.password_hash);
         if (!validPassword) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
         // Generate token
         const token = jwt.sign(
-            { id: user.id, email: user.email, name: user.name },
+            { id: user.id, email: user.email, name: user.name, role: user.role },
             JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -83,7 +83,7 @@ router.post('/login', async (req, res) => {
         res.json({
             success: true,
             token,
-            user: { id: user.id, name: user.name, email: user.email }
+            user: { id: user.id, name: user.name, email: user.email, role: user.role }
         });
 
     } catch (error) {

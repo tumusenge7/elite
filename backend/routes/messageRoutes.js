@@ -1,20 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const db = require('../config/db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'elite-construction-jwt-secret-change-in-production';
-
-// In-memory storage
-let messages = [
-    {
-        id: 1,
-        name: 'blaise',
-        email: 'john@example.com',
-        subject: 'Project Inquiry',
-        message: 'I am interested in your construction services for a new project.',
-        created_at: new Date().toISOString()
-    }
-];
 
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -33,11 +22,43 @@ const authenticateToken = (req, res, next) => {
     }
 };
 
-// GET all messages (protected)
-router.get('/', authenticateToken, (req, res) => {
+const requireAdmin = (req, res, next) => {
+    if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+    return next();
+};
+
+// GET all contact messages (admin only)
+router.get('/', authenticateToken, requireAdmin, async (req, res) => {
     try {
-        console.log('📋 Returning', messages.length, 'messages');
-        res.json(messages);
+        const page = req.query.page ? Number(req.query.page) : null;
+        const limit = req.query.limit ? Number(req.query.limit) : null;
+
+        if (page && limit) {
+            const safeLimit = Math.min(Math.max(limit, 1), 100);
+            const offset = (Math.max(page, 1) - 1) * safeLimit;
+            const [[countRow]] = await db.query(
+                'SELECT COUNT(*) AS total FROM contact_messages'
+            );
+            res.setHeader('X-Total-Count', String(countRow.total));
+
+            const [rows] = await db.query(
+                `
+                SELECT id, name, email, phone, subject, message, created_at
+                FROM contact_messages
+                ORDER BY created_at DESC, id DESC
+                LIMIT ? OFFSET ?
+                `,
+                [safeLimit, offset]
+            );
+            return res.json(rows);
+        }
+
+        const [rows] = await db.query(
+            'SELECT id, name, email, phone, subject, message, created_at FROM contact_messages ORDER BY created_at DESC, id DESC'
+        );
+        res.json(rows);
     } catch (error) {
         console.error('Error fetching messages:', error);
         res.status(500).json({ error: 'Failed to fetch messages' });
@@ -45,30 +66,26 @@ router.get('/', authenticateToken, (req, res) => {
 });
 
 // POST new message (public)
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
     try {
-        const { name, email, subject, message } = req.body;
+        const { name, email, phone, subject, message } = req.body;
 
         if (!name || !email || !message) {
             return res.status(400).json({ error: 'Name, email, and message are required' });
         }
 
-        const newMessage = {
-            id: Date.now(),
-            name,
-            email,
-            subject: subject || null,
-            message,
-            created_at: new Date().toISOString()
-        };
+        const [result] = await db.query(
+            'INSERT INTO contact_messages (name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)',
+            [
+                String(name).trim(),
+                String(email).trim(),
+                phone ? String(phone).trim() : null,
+                subject ? String(subject).trim() : null,
+                String(message)
+            ]
+        );
 
-        messages.push(newMessage);
-
-        console.log('📧 New message from:', name);
-        res.status(201).json({
-            id: newMessage.id,
-            message: 'Message sent successfully'
-        });
+        res.status(201).json({ id: result.insertId, message: 'Message sent successfully' });
 
     } catch (error) {
         console.error('Error saving message:', error);
@@ -76,20 +93,20 @@ router.post('/', (req, res) => {
     }
 });
 
-// DELETE message (protected)
-router.delete('/:id', authenticateToken, (req, res) => {
+// DELETE contact message (admin only)
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
     try {
-        const messageId = parseInt(req.params.id);
-
-        const messageIndex = messages.findIndex(m => m.id === messageId);
-        if (messageIndex === -1) {
+        const messageId = Number(req.params.id);
+        const [existing] = await db.query(
+            'SELECT id FROM contact_messages WHERE id = ?',
+            [messageId]
+        );
+        if (existing.length === 0) {
             return res.status(404).json({ error: 'Message not found' });
         }
 
-        messages = messages.filter(m => m.id !== messageId);
-
-        console.log('✅ Message deleted, ID:', messageId);
-        res.json({ message: 'Message deleted successfully' });
+        await db.query('DELETE FROM contact_messages WHERE id = ?', [messageId]);
+        res.json({ message: 'Message deleted successfully', id: messageId });
 
     } catch (error) {
         console.error('Error deleting message:', error);

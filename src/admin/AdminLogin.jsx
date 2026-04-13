@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { Shield, Mail, Lock, AlertCircle } from 'lucide-react';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://elite-backend-8hcx.onrender.com';
+import API from '../services/api';
 
 const AdminLogin = () => {
     const navigate = useNavigate();
@@ -21,7 +19,7 @@ const AdminLogin = () => {
 
         try {
             // Use the correct endpoint - same as user login but with admin credentials
-            const response = await axios.post(`${API_BASE_URL}/api/users/login`, {
+            const response = await API.post('/api/users/login', {
                 email: email,
                 password: password
             });
@@ -46,7 +44,7 @@ const AdminLogin = () => {
 
             // Detailed error logging
             const debug = {
-                apiUrl: `${API_BASE_URL}/api/users/login`,
+                apiUrl: `${API.defaults.baseURL || ''}/api/users/login`,
                 status: err.response?.status,
                 statusText: err.response?.statusText,
                 data: err.response?.data,

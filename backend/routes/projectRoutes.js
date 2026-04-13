@@ -26,6 +26,29 @@ const authenticateToken = (req, res, next) => {
 router.get('/', async (req, res) => {
     try {
         console.log('📋 Fetching all projects...');
+        const page = req.query.page ? Number(req.query.page) : null;
+        const limit = req.query.limit ? Number(req.query.limit) : null;
+
+        if (page && limit) {
+            const safeLimit = Math.min(Math.max(limit, 1), 100);
+            const offset = (Math.max(page, 1) - 1) * safeLimit;
+
+            const [[countRow]] = await db.query('SELECT COUNT(*) AS total FROM projects');
+            res.setHeader('X-Total-Count', String(countRow.total));
+
+            const [rows] = await db.query(
+                `
+                SELECT id, title, category, location, image, description, year
+                FROM projects
+                ORDER BY year DESC, id DESC
+                LIMIT ? OFFSET ?
+                `,
+                [safeLimit, offset]
+            );
+            console.log(`✅ Found ${rows.length} projects (page ${page})`);
+            return res.json(rows);
+        }
+
         const [rows] = await db.query(
             'SELECT id, title, category, location, image, description, year FROM projects ORDER BY year DESC, id DESC'
         );

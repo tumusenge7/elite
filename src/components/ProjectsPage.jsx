@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import API from '../services/api';
 
 
 // Import your actual project images here if they are in your assets folder
 import project1 from "../assets/1.jpg";
 import project2 from "../assets/2.jpg";
 import project3 from "../assets/3.jpg";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://elite-backend-8hcx.onrender.com';
 
 const ProjectsPage = () => {
     const [projects, setProjects] = useState([]);
@@ -26,7 +25,7 @@ const ProjectsPage = () => {
         const fetchProjects = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(`${API_BASE_URL}/api/projects`);
+                const response = await API.get('/api/projects');
 
                 if (response.data && Array.isArray(response.data)) {
                     // Map API data to match component structure
@@ -61,7 +60,7 @@ const ProjectsPage = () => {
         if (!imagePath) return 'https://via.placeholder.com/800x600?text=No+Image';
         if (imagePath.startsWith('http')) return imagePath;
         if (imagePath.startsWith('data:image')) return imagePath;
-        if (imagePath.startsWith('/uploads')) return `${API_BASE_URL}${imagePath}`;
+        if (imagePath.startsWith('/uploads')) return `${API.defaults.baseURL || ''}${imagePath}`;
         return imagePath;
     };
 

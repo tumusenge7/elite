@@ -15,11 +15,13 @@ import AdminDashboard from './admin/AdminDashboard';
 // Shared UI
 import WhatsAppButton from './components/ui/WhatsAppButton';
 import ScrollToTop from './components/ui/ScrollToTop';
+import Preloader from './components/ui/Preloader';
 
 function App() {
   return (
     <BrowserRouter>
       <div>
+        <Preloader showProgress />
         <NavBar />
         <main>
           <Routes>
